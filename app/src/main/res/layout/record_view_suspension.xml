@@ -18,7 +18,7 @@
         android:layout_width="400dp"
         android:layout_height="wrap_content">
 
-        <com.inno.backdot.view.CameraGLView
+        <com.inno.record.view.CameraGLView
             android:id="@+id/cameraView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
