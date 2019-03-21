@@ -15,7 +15,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.os.Vibrator;
-import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.GestureDetector;
@@ -98,11 +97,9 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
 
     private UVCCameraHelper mCameraHelper;
     private CameraViewInterface mUVCCameraView;
-    private AlertDialog mDialog;
 
     private boolean isRequest;
     private boolean isPreview;
-    private String videoPath;
     private Button mBtPlay, mBtAgainRecord;
 
 

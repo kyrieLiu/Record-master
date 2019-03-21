@@ -26,4 +26,6 @@ dependencies {
     implementation files('libs/isoviewer-1.0-RC-27.jar')
     implementation project(':libusbcamera')
     implementation files('libs/gprintersdkv1.jar')
+    implementation 'io.reactivex:rxjava:1.0.14'
+    implementation 'io.reactivex:rxandroid:1.0.1'
 }
