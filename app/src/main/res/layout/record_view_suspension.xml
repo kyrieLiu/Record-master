@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginRight="10dp">
+
+    <ImageView
+        android:id="@+id/iv_suspension_dot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="30dp"
+        android:src="@drawable/btn_normal_pressed"
+        />
+
+
+    <RelativeLayout
+        android:id="@+id/rl_dot_bottom"
+        android:layout_width="400dp"
+        android:layout_height="wrap_content">
+
+        <com.inno.backdot.view.CameraGLView
+            android:id="@+id/cameraView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_centerInParent="true" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:layout_alignParentBottom="true"
+            android:background="#80ffffff"
+            android:padding="10dp">
+
+            <!-- 开始/结束 录制按钮 -->
+            <ImageView
+                android:id="@+id/record_control"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_centerInParent="true"
+                android:onClick="startRecord"
+                android:visibility="gone"
+                android:src="@drawable/recordvideo_start" />
+
+            <Button
+                android:id="@+id/bt_again_record"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="重新录制"
+                android:visibility="gone" />
+
+
+            <ImageView
+                android:id="@+id/record_pause"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_centerVertical="true"
+                android:layout_centerInParent="true"
+                android:src="@drawable/control_play" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <Chronometer
+                    android:id="@+id/record_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:format="%s"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/record_play"
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text="播放"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+        </RelativeLayout>
+    </RelativeLayout>
+
+
+
+
+
+</LinearLayout>

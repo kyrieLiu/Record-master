@@ -1,0 +1,29 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+
+    defaultConfig {
+        applicationId "com.inno.backdot"
+        minSdkVersion 19
+        targetSdkVersion 22
+        versionCode 6
+        versionName "1.0.6"
+        multiDexEnabled true
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.android.support:appcompat-v7:25.3.1'
+    implementation files('libs/isoviewer-1.0-RC-27.jar')
+    implementation project(':libusbcamera')
+    implementation files('libs/gprintersdkv1.jar')
+}

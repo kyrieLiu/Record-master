@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">RecordVideo</string>
+    <string name="app_name_zh">返回点</string>
+    <string name="decerption">激活辅助服务</string>
+
+    <string name="image_permission_first_hint">请授予[相机]，[存储]权限，否则无法录像</string>
+    <string name="image_permission_hint">软件的部分功能需要请求您的手机权限,请允许以下权限:\n
+        --相机/存储\n
+        请到 \"应用程序信息 -> 权限\" 中授予!
+    </string>
+
+
+    <string name="str_choice_printer_command">请选择正确的打印机指令</string>
+    <string name="str_printer_conn_normal">打印机连接正常</string>
+    <string name="str_printer_out_of_paper">打印机缺纸</string>
+    <string name="str_printer_open_cover">打印机开盖</string>
+    <string name="str_printer_error">打印机出错</string>
+
+</resources>
