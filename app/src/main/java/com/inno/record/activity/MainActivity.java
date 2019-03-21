@@ -21,16 +21,18 @@ import android.widget.Toast;
 
 import com.inno.record.R;
 import com.inno.record.config.AppApplication;
-import com.inno.record.utils.Utils;
 import com.inno.record.reciver.DotReceiver;
 import com.inno.record.service.RecordWindowService;
 import com.inno.record.service.WindowService;
 import com.inno.record.utils.PermissionHelper;
+import com.inno.record.utils.Utils;
 import com.inno.record.utils.gputil.BlueToothPrintUtil;
 import com.inno.record.utils.gputil.DeviceConnFactoryManager;
 import com.inno.record.view.SelectDialog;
+
 /**
  * Created by liuyin on 2019/3/6 11:36
+ *
  * @Describe 按钮操作页
  */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -82,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mLock_info = ((TextView) findViewById(R.id.tv_lock_text));
         mFloatView_info = ((TextView) findViewById(R.id.tv_dot_text));
 
-        LinearLayout mLlPrinter= (LinearLayout) findViewById(R.id.ll_printer);
+        LinearLayout mLlPrinter = (LinearLayout) findViewById(R.id.ll_printer);
         mLlPrinter.setOnClickListener(this);
 
 
@@ -115,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mSw_FloatView.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                boolean serviceActive = Utils.isServiceActive(MainActivity.this, "com.inno.backdot.service.WindowService");
+                boolean serviceActive = Utils.isServiceActive(MainActivity.this, "com.inno.record.service.WindowService");
                 Log.d("tag", "serviceActivity==" + serviceActive);
                 if (isChecked) {
                     if (!serviceActive) {
@@ -132,7 +134,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mSw_Record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                boolean serviceActive = Utils.isServiceActive(MainActivity.this, "com.inno.backdot.service.RecordWindowService");
+                boolean serviceActive = Utils.isServiceActive(MainActivity.this, "com.inno.record.service.RecordWindowService");
                 if (isChecked) {
                     if (!serviceActive) {
                         requestPermission(2);
@@ -147,7 +149,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
     }
-
 
 
     private PermissionHelper mHelper;
@@ -187,8 +188,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-
-
     @SuppressLint("NewApi")
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -212,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         initAdmin();
-        boolean serviceActive = Utils.isServiceActive(MainActivity.this, "com.inno.backdot.service.WindowService");
+        boolean serviceActive = Utils.isServiceActive(MainActivity.this, "com.inno.record.service.WindowService");
         if (serviceActive) {
             mFloatView_info.setText("( 已开启 )");
             mSw_FloatView.setChecked(true);
@@ -220,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mFloatView_info.setText("( 已关闭 )");
             mSw_FloatView.setChecked(false);
         }
-        boolean recordActive = Utils.isServiceActive(MainActivity.this, "com.inno.backdot.service.RecordWindowService");
+        boolean recordActive = Utils.isServiceActive(MainActivity.this, "com.inno.record.service.RecordWindowService");
         if (recordActive) {
             mTvRecord.setText("( 已开启 )");
             mSw_Record.setChecked(true);
@@ -282,9 +281,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     /**
      * 连接打印接
+     *
      * @param device
      */
-    private void connectPrintBlueTooth(BluetoothDevice device){
+    private void connectPrintBlueTooth(BluetoothDevice device) {
         new DeviceConnFactoryManager.Build()
                 .setId(0)
                 //设置连接方式
