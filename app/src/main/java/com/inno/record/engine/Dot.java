@@ -17,6 +17,7 @@ import android.os.SystemClock;
 import android.os.Vibrator;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -44,6 +45,12 @@ import com.serenegiant.usb.widget.CameraViewInterface;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+import rx.Observable;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
 
 /**
  * Created by didik on 2016/5/12.
@@ -100,7 +107,11 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
 
     private boolean isRequest;
     private boolean isPreview;
-    private Button mBtPlay, mBtAgainRecord;
+    private Button mBtPlay, mBtAgainRecord, mBtAutoRecord;
+
+    private Subscription mSubscription;
+
+    private boolean isTerminateAutoPlay = true;//是否已经终止连续录制
 
 
     private Dot(Context mContext) {
@@ -133,7 +144,6 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
             suspensionView = null;
         }
     }
-
 
 
     private void initWindow() {
@@ -186,17 +196,20 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
         mRlRecordParent = (LinearLayout) suspensionView.findViewById(R.id.rl_dot_bottom);
         mBtPlay = (Button) suspensionView.findViewById(R.id.record_play);
         mBtAgainRecord = (Button) suspensionView.findViewById(R.id.bt_again_record);
+        mBtAutoRecord = (Button) suspensionView.findViewById(R.id.bt_auto_usb_record);
+
         mBtPlay.setOnClickListener(this);
         mBtAgainRecord.setOnClickListener(this);
         mRecordControl.setOnClickListener(this);
         mPauseRecord.setOnClickListener(this);
         imageView.setOnClickListener(this);
+        mBtAutoRecord.setOnClickListener(this);
 
         mTextureView = suspensionView.findViewById(R.id.camera_view);
         mUVCCameraView = (CameraViewInterface) mTextureView;
 
 
-        if (mCameraHelper==null){
+        if (mCameraHelper == null) {
             initUSBCamera();
         }
 
@@ -290,7 +303,6 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
     }
 
 
-
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
@@ -334,6 +346,20 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
                 mRecordTime.stop();
                 mPauseRecord.setImageResource(R.drawable.control_play);
                 break;
+            case R.id.bt_auto_usb_record:
+                if (isTerminateAutoPlay) {
+                    isTerminateAutoPlay = false;
+                    mBtAutoRecord.setText("停止连续录制");
+                    autoRecord();
+                } else {
+                    isTerminateAutoPlay = true;
+                    mBtAutoRecord.setText("连续录制");
+                    if (mSubscription != null && !mSubscription.isUnsubscribed()) {
+                        mSubscription.unsubscribe();
+                    }
+                    stopAutoRecord();
+                }
+                break;
         }
     }
 
@@ -348,7 +374,7 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
         }
         if (mRecorderState == STATE_INIT) {
             String videoPath = getSDPath(mContext) + System.currentTimeMillis();
-            FileUtils.createfile(getSDPath(mContext)+ "test666.h264");
+            FileUtils.createfile(getSDPath(mContext) + "test666.h264");
 
             // if you want to record,please create RecordParams like this
             RecordParams params = new RecordParams();
@@ -390,8 +416,8 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
         }
         if (mRecorderState == STATE_PAUSE) {
             //String videoPath = UVCCameraHelper.ROOT_PATH + System.currentTimeMillis();
-            String videoPath = getSDPath(mContext)+System.currentTimeMillis();
-            FileUtils.createfile( getSDPath(mContext) + "test666.h264");
+            String videoPath = getSDPath(mContext) + System.currentTimeMillis();
+            FileUtils.createfile(getSDPath(mContext) + "test666.h264");
 
             // if you want to record,please create RecordParams like this
             RecordParams params = new RecordParams();
@@ -414,10 +440,10 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
 
                     if (TextUtils.isEmpty(saveVideoPath)) {
                         saveVideoPath = currentVideoFilePath;
-                    } else if (!currentVideoFilePath.equals(saveVideoPath)){
+                    } else if (!currentVideoFilePath.equals(saveVideoPath)) {
                         mergeRecordVideoFile();
                     }
-                   // showShortMsg("保存完毕  saveVideoPath="+saveVideoPath+"  currentVideoFilePath="+currentVideoFilePath);
+                    // showShortMsg("保存完毕  saveVideoPath="+saveVideoPath+"  currentVideoFilePath="+currentVideoFilePath);
                 }
             });
             // if you only want to push stream,please call like this
@@ -428,11 +454,89 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
             FileUtils.releaseFile();
             mCameraHelper.stopPusher();
 
-
-            //showShortMsg("pause stop record...");
         }
 
         refreshPauseUI();
+    }
+
+    private void autoRecord() {
+        startAutoRecord();
+        mSubscription = Observable.interval(0, 21, TimeUnit.SECONDS)
+                .observeOn(AndroidSchedulers.mainThread())//操作UI主要在UI线程
+                .subscribe(new Subscriber<Long>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.d("tag", "执行onCompleted==");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+
+                    @Override
+                    public void onNext(Long aLong) {
+                        stopAutoRecord();
+                    }
+                });
+    }
+
+    private void startAutoRecord() {
+        String videoPath = getSDPath(mContext) + System.currentTimeMillis();
+        FileUtils.createfile(getSDPath(mContext) + "test666.h264");
+
+        // if you want to record,please create RecordParams like this
+        RecordParams params = new RecordParams();
+        params.setRecordPath(videoPath);
+        params.setRecordDuration(0);                        // 设置为0，不分割保存
+        params.setVoiceClose(true);    // is close voice
+        mCameraHelper.startPusher(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
+            @Override
+            public void onEncodeResult(byte[] data, int offset, int length, long timestamp, int type) {
+                // type = 1,h264 video stream
+                if (type == 1) {
+                    FileUtils.putFileStream(data, offset, length);
+                }
+            }
+
+            @Override
+            public void onRecordResult(String videoPath) {
+//                currentVideoFilePath = videoPath;
+//
+//
+//                if (TextUtils.isEmpty(saveVideoPath)) {
+//                    saveVideoPath = currentVideoFilePath;
+//                } else if (!currentVideoFilePath.equals(saveVideoPath)){
+//                    mergeRecordVideoFile();
+//                }
+                // showShortMsg("保存完毕  saveVideoPath="+saveVideoPath+"  currentVideoFilePath="+currentVideoFilePath);
+            }
+        });
+        mPauseRecord.setImageResource(R.drawable.control_pause);
+
+        mRecordTime.setBase(SystemClock.elapsedRealtime());
+
+        mRecordTime.start();
+        mRecorderState = STATE_RECORDING;
+        mBtAgainRecord.setVisibility(View.GONE);
+        mBtPlay.setVisibility(View.GONE);
+    }
+
+    private void stopAutoRecord() {
+        FileUtils.releaseFile();
+        mCameraHelper.stopPusher();
+
+        mPauseRecord.setImageResource(R.drawable.control_play);
+
+        mPauseTime = SystemClock.elapsedRealtime();
+        mRecordTime.stop();
+        mRecorderState = STATE_PAUSE;
+
+        mBtAgainRecord.setVisibility(View.VISIBLE);
+        mBtPlay.setVisibility(View.VISIBLE);
+        if (!isTerminateAutoPlay) {
+            startAutoRecord();
+        }
+
     }
 
 
@@ -648,7 +752,6 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
             }
         });
     }
-
 
 
     @SuppressLint("NewApi")

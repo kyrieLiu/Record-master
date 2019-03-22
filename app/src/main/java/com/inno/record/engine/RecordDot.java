@@ -41,6 +41,12 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+import rx.Observable;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
 
 /**
  * Created by didik on 2016/5/12.
@@ -65,7 +71,6 @@ public class RecordDot implements GestureDetector.OnDoubleTapListener, GestureDe
     private ImageView mRecordControl;
     private ImageView mPauseRecord;
     private Chronometer mRecordTime;
-
 
 
     //    private boolean isRecording;// 标记，判断当前是否正在录制
@@ -94,7 +99,11 @@ public class RecordDot implements GestureDetector.OnDoubleTapListener, GestureDe
     private String saveFilePath;//保存文件路径
     private String currentFilePath;//临时文件存储路径
 
-    private Button mBtPlay, mBtAgainRecord;
+    private Button mBtPlay, mBtAgainRecord, mBtAutoRecord;
+
+    private Subscription mSubscription;
+
+    private boolean isTerminateAutoPlay = true;//是否已经终止连续录制
 
     private RecordDot(Context mContext) {
         this.mContext = mContext;
@@ -236,6 +245,9 @@ public class RecordDot implements GestureDetector.OnDoubleTapListener, GestureDe
 
         mBtPlay = (Button) suspensionView.findViewById(R.id.record_play);
         mBtAgainRecord = (Button) suspensionView.findViewById(R.id.bt_again_record);
+
+        mBtAutoRecord = (Button) suspensionView.findViewById(R.id.bt_auto_record);
+
         mBtPlay.setOnClickListener(this);
         mBtAgainRecord.setOnClickListener(this);
 
@@ -243,6 +255,8 @@ public class RecordDot implements GestureDetector.OnDoubleTapListener, GestureDe
         mRecordControl.setOnClickListener(this);
         mPauseRecord.setOnClickListener(this);
         imageView.setOnClickListener(this);
+
+        mBtAutoRecord.setOnClickListener(this);
 
         mCameraView.onResume();
 
@@ -314,10 +328,15 @@ public class RecordDot implements GestureDetector.OnDoubleTapListener, GestureDe
             case R.id.iv_suspension_dot:
                 if (mRlRecordParent.getVisibility() == View.VISIBLE) {
                     mRlRecordParent.setVisibility(View.GONE);
-                    onPause();
+                    if (isTerminateAutoPlay) {//已经终止了连续录制
+                        onPause();
+                    }
                 } else {
                     mRlRecordParent.setVisibility(View.VISIBLE);
-                    mCameraView.onResume();
+                    if (isTerminateAutoPlay) {
+                        mCameraView.onResume();
+                    }
+
                 }
                 break;
 
@@ -326,7 +345,7 @@ public class RecordDot implements GestureDetector.OnDoubleTapListener, GestureDe
                 Intent intent = new Intent(mContext, PlayVideoActivity.class);
                 Bundle bundle = new Bundle();
                 bundle.putString("videoPath", saveFilePath);
-                bundle.putInt("type",1);
+                bundle.putInt("type", 1);
                 intent.putExtras(bundle);
                 mContext.startActivity(intent);
 
@@ -338,9 +357,110 @@ public class RecordDot implements GestureDetector.OnDoubleTapListener, GestureDe
                 mRecordTime.stop();
                 mPauseRecord.setImageResource(R.drawable.control_play);
                 break;
+            case R.id.bt_auto_record:
+                if (isTerminateAutoPlay) {
+                    isTerminateAutoPlay = false;
+                    autoRecord();//开始连续录制
+                    mBtAutoRecord.setText("停止连续录制");
+
+                } else {
+                    isTerminateAutoPlay = true;
+                    mBtAutoRecord.setText("连续录制");
+                    if (mSubscription != null && !mSubscription.isUnsubscribed()) {
+                        mSubscription.unsubscribe();
+                    }
+                    stopAutoRecording();
+                }
+                break;
         }
 
     }
+
+
+    /**
+     * 设置自动录制
+     */
+    private void autoRecord() {
+        //
+        mSubscription = Observable.interval(0, 21, TimeUnit.SECONDS)
+                .observeOn(AndroidSchedulers.mainThread())//操作UI主要在UI线程
+                .subscribe(new Subscriber<Long>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+
+                    @Override
+                    public void onNext(Long aLong) {
+                        stopAutoRecording();
+                    }
+                });
+
+
+    }
+
+    private void startAutoRecording() {
+        mBtPlay.setVisibility(View.GONE);
+        mBtAgainRecord.setVisibility(View.GONE);
+        try {
+            mMuxer = new RecordMediaMuxerWrapper(".mp4");    // if you record audio only, ".m4a" is also OK.
+            // for video capturing
+            new RecordRecordMediaVideoEncoder(mMuxer, mAutoMediaEncoderListener, mCameraView.getVideoWidth(), mCameraView.getVideoHeight());
+            // for audio capturing
+            new RecordMediaAudioEncoder(mMuxer, mAudioListener);
+//            if (TextUtils.isEmpty(saveFilePath)) {
+//                saveFilePath = mMuxer.getOutputPath();
+//            }
+//            currentFilePath = mMuxer.getOutputPath();
+            mMuxer.prepare();
+            mMuxer.startRecording();
+
+            mPauseRecord.setImageResource(R.drawable.control_pause);
+
+            mRecordTime.setBase(SystemClock.elapsedRealtime());
+            mRecordTime.start();
+
+        } catch (final IOException e) {
+            Log.e(TAG, "startCapture:", e);
+            mBtPlay.setVisibility(View.VISIBLE);
+            mBtAgainRecord.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void stopAutoRecording() {
+        mPauseRecord.setImageResource(R.drawable.control_play);
+        mRecordTime.setBase(SystemClock.elapsedRealtime());
+        mRecordTime.stop();
+
+        if (mMuxer != null) {
+            mMuxer.stopRecording();
+            mMuxer = null;
+        }
+
+        if (!isTerminateAutoPlay) {
+            startAutoRecording();
+        }
+    }
+
+    private final RecordMediaEncoder.MediaEncoderListener mAutoMediaEncoderListener = new RecordMediaEncoder.MediaEncoderListener() {
+        @Override
+        public void onPrepared(final RecordMediaEncoder encoder) {
+            if (encoder instanceof RecordRecordMediaVideoEncoder)
+                mCameraView.setVideoEncoder((RecordRecordMediaVideoEncoder) encoder);
+        }
+
+        @Override
+        public void onStopped(final RecordMediaEncoder encoder) {
+            if (encoder instanceof RecordRecordMediaVideoEncoder) {
+                mCameraView.setVideoEncoder(null);
+            }
+
+
+        }
+    };
 
     /**
      * start resorcing
@@ -414,7 +534,7 @@ public class RecordDot implements GestureDetector.OnDoubleTapListener, GestureDe
 
             if (!currentFilePath.equals(saveFilePath)) {
                 mergeRecordVideoFile(saveFilePath, currentFilePath);
-            }else{
+            } else {
                 handler.sendEmptyMessage(1);
             }
         }

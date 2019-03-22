@@ -83,6 +83,14 @@
                     android:visibility="gone" />
             </LinearLayout>
 
+            <Button
+                android:id="@+id/bt_auto_record"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="连续录制"
+                android:layout_centerVertical="true"
+                />
+
         </RelativeLayout>
     </RelativeLayout>
 
