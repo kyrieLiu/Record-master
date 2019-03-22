@@ -460,7 +460,6 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
     }
 
     private void autoRecord() {
-        startAutoRecord();
         mSubscription = Observable.interval(0, 21, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())//操作UI主要在UI线程
                 .subscribe(new Subscriber<Long>() {
@@ -481,6 +480,7 @@ public class Dot implements GestureDetector.OnDoubleTapListener, GestureDetector
     }
 
     private void startAutoRecord() {
+        Toast.makeText(mContext,"录制下一条",Toast.LENGTH_SHORT).show();
         String videoPath = getSDPath(mContext) + System.currentTimeMillis();
         FileUtils.createfile(getSDPath(mContext) + "test666.h264");
 
